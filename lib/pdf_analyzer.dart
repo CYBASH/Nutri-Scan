@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pdf_provider.dart';
 import 'package:file_picker/file_picker.dart';
-import 'splash_screen.dart';
+// import 'splash_screen.dart';
 
 class PDFAnalyzer extends StatefulWidget {
   @override
