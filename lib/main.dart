@@ -8,6 +8,8 @@ import 'chat_provider.dart'; // Import ChatProvider
 
 void main() {
   Gemini.init(apiKey: GEMINI_API_KEY);
+  final Gemini gemini = Gemini.instance;
+  gemini.streamGenerateContent("make sure to give reply in plain text don't use bold or italic text. ");
   runApp(const MyApp());
 }
 
