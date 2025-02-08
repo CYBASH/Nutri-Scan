@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'pdf_provider.dart';
 import 'package:file_picker/file_picker.dart';
+import 'theme_provider.dart'; // Import your ThemeProvider
 // import 'splash_screen.dart';
 
 class PDFAnalyzer extends StatefulWidget {
@@ -15,6 +16,10 @@ class _PDFAnalyzerState extends State<PDFAnalyzer> {
 
   @override
   Widget build(BuildContext context) {
+
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('PDF Summarizer'),
@@ -43,6 +48,10 @@ class _PDFAnalyzerState extends State<PDFAnalyzer> {
                       await Provider.of<PdfProvider>(context, listen: false).extractText();
                     }
                   },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDarkMode ? Colors.blue[800] : Colors.blue, // Button background color
+                    foregroundColor: Colors.white, // Button text color
+                  ),
                   child: const Text('Pick PDF'),
                 ),
                 const SizedBox(height: 20), // Added spacing

@@ -5,6 +5,7 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'chat_provider.dart';
+import 'theme_provider.dart'; // Import your theme provider
 
 class ImageScanHomePage extends StatefulWidget {
   const ImageScanHomePage({super.key});
@@ -20,6 +21,8 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
   @override
   Widget build(BuildContext context) {
     final chatProvider = Provider.of<ChatProvider>(context);
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -29,10 +32,38 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
         inputOptions: InputOptions(trailing: [
           IconButton(
               onPressed: _sendMediaMessage, icon: const Icon(Icons.image))
-        ]),
+        ],
+          sendButtonBuilder: (Function() onSend) {
+            return IconButton(
+              icon: Icon(Icons.send, color: isDarkMode ? Colors.blue[1000] : Colors.blue[500],), // Change the color here
+              onPressed: onSend,
+            );
+          },
+          inputTextStyle: TextStyle(
+          color: isDarkMode ? Colors.white : Colors.black, // Text input color
+        ),
+        inputDecoration: InputDecoration(
+          filled: true,
+          fillColor: isDarkMode ? Colors.grey[800] : Colors.white, // Input field background
+          hintText: "Type a message...",
+          hintStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]), // Hint text color
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: BorderSide(color: isDarkMode ? Colors.white70 : Colors.black26),
+          ),
+        ),
+        ),
+
+
         currentUser: chatProvider.currentUser,
         onSend: _sendMessage,
         messages: chatProvider.messages,
+        messageOptions: MessageOptions(
+          currentUserContainerColor: isDarkMode ? Colors.green.shade100 : Colors.blue, // Dynamic color
+          containerColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300, // Other user's chat bubble
+          textColor: isDarkMode ? Colors.white : Colors.black, // Adapts to dark mode
+        ),
+
       ),
     );
   }

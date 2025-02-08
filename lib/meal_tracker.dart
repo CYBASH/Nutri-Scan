@@ -7,6 +7,8 @@ import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_gemini/flutter_gemini.dart';
+import 'package:provider/provider.dart';
+import 'theme_provider.dart'; // Import your theme provider
 
 class MealTrackerUI extends StatefulWidget {
   @override
@@ -14,6 +16,7 @@ class MealTrackerUI extends StatefulWidget {
 }
 
 class _MealTrackerUIState extends State<MealTrackerUI> {
+
   // File? _selectedImage;
   List<Map<String, String>> meals = [];
   final Gemini gemini = Gemini.instance;
@@ -380,6 +383,10 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
 
   @override
   Widget build(BuildContext context) {
+
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+
     DateTime now = DateTime.now();
     String formattedDate = DateFormat('EEE d').format(now);
 
@@ -391,13 +398,13 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
           children: [
             Row(
               children: [
-                Text(formattedDate.split(' ')[0], style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
+                Text(formattedDate.split(' ')[0], style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black)),
                 SizedBox(width: 4),
-                Text(formattedDate.split(' ')[1], style: TextStyle(fontSize: 16, color: Colors.black)),
+                Text(formattedDate.split(' ')[1], style: TextStyle(fontSize: 16, color: isDarkMode ? Colors.white : Colors.black)),
               ],
             ),
             IconButton(
-              icon: Icon(Icons.calendar_today, color: Colors.black),
+              icon: Icon(Icons.calendar_today, color: isDarkMode ? Colors.white : Colors.black),
               onPressed: () {
                 showDatePicker(
                   context: context,
@@ -429,8 +436,8 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
                     lineWidth: 10.0,
                     percent: percent,
                     center: Text("${(percent * 100).toStringAsFixed(1)}%", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    progressColor: Colors.amber,
-                    backgroundColor: Colors.grey.shade800,
+                    progressColor: isDarkMode ? Colors.lightBlueAccent : Colors.blue[1000],
+                    backgroundColor: isDarkMode ? Colors.white : Colors.black,
                     circularStrokeCap: CircularStrokeCap.round,
                   ),
                   SizedBox(width: 20),
