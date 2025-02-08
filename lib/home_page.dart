@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'image_prompt_home_page.dart'; // Import Chatbot HomePage
 import 'pdf_analyzer.dart'; // Import PDF Analyzer HomePage
+import 'meal_tracker.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -62,6 +63,17 @@ class MyDrawer extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => PDFAnalyzer()),
+              );
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.picture_as_pdf),
+            title: Text('Meal Tracker'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => MealTrackerUI()),
               );
             },
           ),

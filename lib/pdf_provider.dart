@@ -66,7 +66,7 @@ class PdfProvider extends ChangeNotifier {
           {
             "parts": [
               {
-                "text": "Analyze the following text and find the diseases of the patitent and suggest the food not to be eaten and which exercises to be done for that disease :\n\n$text"
+                "text": "Analyze the following text and find the diseases of the patient and suggest the food not to be eaten and which exercises to be done for that disease :\n\n$text"
               }
             ]
           }

@@ -46,6 +46,8 @@ dependencies:
   image_picker: ^1.0.7
   dash_chat_2: 0.0.20
   pdf_gemini: ^0.0.3
+  percent_indicator: ^4.2.4
+  google_fonts: ^6.2.1
 
 
 dev_dependencies:
