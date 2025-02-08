@@ -14,7 +14,7 @@ class MealTrackerUI extends StatefulWidget {
 }
 
 class _MealTrackerUIState extends State<MealTrackerUI> {
-  File? _selectedImage;
+  // File? _selectedImage;
   List<Map<String, String>> meals = [];
   final Gemini gemini = Gemini.instance;
   double dailyGoal = DailyGoal;
@@ -61,7 +61,6 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
         - Base calculations on a standard 100g serving
 
         
-
         Remember to be precise and avoid any unnecessary text or explanations.
         Remember to give response in single line
         """;
