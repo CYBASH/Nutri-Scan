@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "194759112633",
+    "firebase_url": "https://nutriscan-565df-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "nutriscan-565df",
+    "storage_bucket": "nutriscan-565df.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:194759112633:android:ffb29cf661a3e97dc2e868",
+        "android_client_info": {
+          "package_name": "com.cybash.projects.nutri_scan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHWS9itrG9fcs7-TpE5zaBxvr7E-8oJFo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

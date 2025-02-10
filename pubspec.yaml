@@ -49,6 +49,10 @@ dependencies:
   percent_indicator: ^4.2.4
   google_fonts: ^6.2.1
   shared_preferences: ^2.2.2  # To save theme mode persistently
+  firebase_core: ^3.11.0
+  cloud_firestore: ^5.6.3
+  flutter_riverpod: ^2.6.1
+  firebase_auth: ^5.4.2
 
 
 dev_dependencies:

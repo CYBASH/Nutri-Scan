@@ -1,6 +1,9 @@
 import 'dart:typed_data';  // This is the correct import for Uint8List
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:intl/intl.dart';
 import 'package:nutri_scan/consts.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
@@ -9,16 +12,69 @@ import 'dart:io';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:provider/provider.dart';
 import 'theme_provider.dart'; // Import your theme provider
+import 'meal_provider.dart';
 
 class MealTrackerUI extends StatefulWidget {
   @override
   _MealTrackerUIState createState() => _MealTrackerUIState();
 }
 
+
 class _MealTrackerUIState extends State<MealTrackerUI> {
 
-  // File? _selectedImage;
-  List<Map<String, String>> meals = [];
+
+  final MealService mealService = MealService();
+
+  List<Map<String, dynamic>> meals = []; // Store meals locally
+
+  @override
+  void initState() {
+    super.initState();
+    fetchMealsFromFirebase(); // Fetch meals when screen loads
+  }
+
+  Future<void> fetchMealsFromFirebase() async {
+    try {
+      List<Map<String, dynamic>> fetchedMeals = await mealService.fetchMeals();
+
+      double totalCalories = 0.0;
+      double totalProtein = 0.0;
+      double totalCarbs = 0.0;
+      double totalFat = 0.0;
+      double totalFiber = 0.0;
+
+      List<Map<String, dynamic>> updatedMeals = fetchedMeals.map((meal) {
+        totalCalories += meal["calories"];
+        totalProtein += meal["protein"];
+        totalCarbs += meal["carbs"];
+        totalFat += meal["fat"];
+        totalFiber += meal["fiber"];
+
+        return {
+          "title": meal["mealName"] ?? "Food",
+          "subtitle": "Calories: ${meal["calories"]} kcal",
+          "calories": meal["calories"].toString(),
+          "image": meal["imageUrl"] ?? "",
+        };
+      }).toList();
+
+      setState(() {
+        meals = updatedMeals;
+        consumedCalories = totalCalories;
+        percent = consumedCalories / dailyGoal;
+        targetCalories = dailyGoal - consumedCalories;
+
+        consumedProtein = totalProtein;
+        consumedCarbs = totalCarbs;
+        consumedFat = totalFat;
+        consumedFiber = totalFiber;
+      });
+    } catch (e) {
+      print("Error fetching meals: $e");
+    }
+  }
+
+
   final Gemini gemini = Gemini.instance;
   double dailyGoal = DailyGoal;
   double proteinGoal = 120, carbsGoal = 120, fatGoal = 80, fiberGoal = 104;
@@ -77,6 +133,24 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
   //     });
   //   }
   // }
+
+  void addNewMeal() async {
+    try {
+      await mealService.addMeal(
+          detectedFood,
+          detectedCaloriesInDouble,
+          detectedProteinsInDouble,
+          detectedCarbsInDouble,
+          detectedFatsInDouble,
+          detectedFiberInDouble,
+          _imagePath
+      );
+      print("Meal added successfully!");
+    } catch (e) {
+      print("Error adding meal: $e");
+    }
+  }
+
 
   void _pickImage() async {
     showModalBottomSheet(
@@ -192,6 +266,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
 
     calculateNutrients();
     // _addMeal("Food", detectedFood, detectedCalories, _selectedImage);
+    addNewMeal();
     _addMeal("Food", detectedFood, detectedCalories, _imagePath);
 
     return nutritionData;
@@ -472,6 +547,58 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
           ),
         ),
       ),
+
+      // body: SingleChildScrollView(
+      //   child: Padding(
+      //     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      //     child: Column(
+      //       crossAxisAlignment: CrossAxisAlignment.start,
+      //       children: [
+      //         Text("Calorie Goal", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+      //         SizedBox(height: 10),
+      //         Row(
+      //           children: [
+      //             CircularPercentIndicator(
+      //               radius: 60.0,
+      //               lineWidth: 10.0,
+      //               percent: percent,
+      //               center: Text("${(percent * 100).toStringAsFixed(1)}%", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      //               progressColor: isDarkMode ? Colors.lightBlueAccent : Colors.blue[1000],
+      //               backgroundColor: isDarkMode ? Colors.white : Colors.black,
+      //               circularStrokeCap: CircularStrokeCap.round,
+      //             ),
+      //             SizedBox(width: 20),
+      //             Column(
+      //               crossAxisAlignment: CrossAxisAlignment.start,
+      //               children: [
+      //                 calorieText("Daily Goal: ", "${dailyGoal.toStringAsFixed(0)} cal"),
+      //                 calorieText("Consumed: ", "${consumedCalories.toStringAsFixed(0)} cal"),
+      //                 calorieText("Left: ", "${(dailyGoal - consumedCalories).toStringAsFixed(0)} cal"),
+      //               ],
+      //             ),
+      //           ],
+      //         ),
+      //         SizedBox(height: 20),
+      //         Row(
+      //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      //           children: [
+      //             nutrientInfo("Protein", "${consumedProtein.toStringAsFixed(0)}/${proteinGoal.toStringAsFixed(0)} g"),
+      //             nutrientInfo("Carbs", "${consumedCarbs.toStringAsFixed(0)}/${carbsGoal.toStringAsFixed(0)} g"),
+      //             nutrientInfo("Fat", "${consumedFat.toStringAsFixed(0)}/${fatGoal.toStringAsFixed(0)} g"),
+      //             nutrientInfo("Fiber", "${consumedFiber.toStringAsFixed(0)}/${fiberGoal.toStringAsFixed(0)} g"),
+      //           ],
+      //         ),
+      //         Divider(color: Colors.grey.shade800, thickness: 1),
+      //         SizedBox(height: 20),
+      //         Text("Food Intake", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+      //         SizedBox(height: 10),
+      //         mealCard("Add Food", Icons.add, null, null, _pickImage),
+      //         ...meals.map((meal) => mealCard(meal["title"]!, null, meal["subtitle"], meal["calories"], null, meal["image"])).toList(),
+      //         SizedBox(height: 20),
+      //       ],
+      //     ),
+      //   ),
+      // ),
     );
   }
 
@@ -534,7 +661,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
             ? Icon(icon, color: Colors.grey, size: 40)
             : Image.asset('assets/splash_screen/logo_nutriscan.png', width: 50, height: 50, fit: BoxFit.cover)), // Default placeholder
         title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        subtitle: subtitle != null ? Text(subtitle, style: TextStyle(color: Colors.grey.shade900)) : null,
+        subtitle: subtitle != null ? Text(subtitle, style: TextStyle(/*color: Colors.grey.shade900*/)) : null,
         trailing: calories != null ? Text(calories, style: TextStyle(fontWeight: FontWeight.bold)) : null,
         onTap: onTap,
       ),
@@ -543,3 +670,78 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
 
 
 }
+
+class MealService {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Future<void> addMeal(
+      String mealName,
+      double calories,
+      double protein,
+      double carbs,
+      double fat,
+      double fiber,
+      String imageUrl) async {
+
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      throw Exception("User not logged in");
+    }
+
+    DocumentReference mealRef = _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('meals')
+        .doc();
+
+    await mealRef.set({
+      'mealId': mealRef.id,
+      'mealName': mealName,
+      'calories': calories,
+      'protein': protein,
+      'carbs': carbs,
+      'fat': fat,
+      'fiber': fiber,
+      'imageUrl': imageUrl,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+
+  Future<List<Map<String, dynamic>>> fetchMeals() async {
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      throw Exception("User not logged in");
+    }
+
+    QuerySnapshot querySnapshot = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('meals')
+        .orderBy('timestamp', descending: true)
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      return {
+        'mealId': doc.id,
+        'mealName': doc['mealName'] ?? 'Unknown',
+        'calories': (doc['calories'] as num?)?.toDouble() ?? 0.0,
+        'protein': (doc['protein'] as num?)?.toDouble() ?? 0.0,
+        'carbs': (doc['carbs'] as num?)?.toDouble() ?? 0.0,
+        'fat': (doc['fat'] as num?)?.toDouble() ?? 0.0,
+        'fiber': (doc['fiber'] as num?)?.toDouble() ?? 0.0,
+        'imageUrl': doc['imageUrl'] ?? '',
+      };
+    }).toList();
+  }
+
+
+
+
+
+}
+
+
+
+
+
