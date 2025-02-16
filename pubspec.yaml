@@ -53,6 +53,8 @@ dependencies:
   cloud_firestore: ^5.6.3
   flutter_riverpod: ^2.6.1
   firebase_auth: ^5.4.2
+  url_launcher: ^6.2.5
+
 
 
 dev_dependencies:
@@ -87,6 +89,7 @@ flutter:
     - assets/splash_screen/home_page.png
     - assets/splash_screen/logo_nutriscan.jpeg
     - assets/splash_screen/logo_nutriscan.png
+    - assets/splash_screen/logo_nutriscan_dark.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

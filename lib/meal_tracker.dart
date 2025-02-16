@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:provider/provider.dart';
+import 'local_variables.dart';
 import 'theme_provider.dart'; // Import your theme provider
 import 'meal_provider.dart';
 
@@ -76,7 +77,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
 
 
   final Gemini gemini = Gemini.instance;
-  double dailyGoal = DailyGoal;
+  // double dailyGoal = DailyGoal;
   double proteinGoal = 120, carbsGoal = 120, fatGoal = 80, fiberGoal = 104;
   double consumedProtein = 0.0, consumedCarbs = 0.0, consumedFat = 0.0, consumedFiber = 0.0;
   double consumedCalories = 0.0;
@@ -95,6 +96,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
   String detectedFiber = "";
 
   double percent = 0.0;
+
 
   String _imagePath = "";
 
@@ -733,6 +735,7 @@ class MealService {
         'imageUrl': doc['imageUrl'] ?? '',
       };
     }).toList();
+
   }
 
 

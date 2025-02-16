@@ -10,6 +10,7 @@ import 'pdf_provider.dart';
 import 'chat_provider.dart'; // Import ChatProvider
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'calorie_provider.dart';
 
 void main() async{
   Gemini.init(apiKey: GEMINI_API_KEY);
@@ -19,6 +20,7 @@ void main() async{
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
 
 
   await FirebaseAuth.instance.signInAnonymously();
@@ -37,6 +39,7 @@ void main() async{
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
         ChangeNotifierProvider(create: (context) => MealProvider()), // Add MealProvider
+        ChangeNotifierProvider(create: (context) => CalorieProvider()),
       ],
       child: const MyApp(),
     ),
@@ -48,11 +51,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final themeProvider = Provider.of<ThemeProvider>(context);
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => PdfProvider()),
         ChangeNotifierProvider(create: (context) => ChatProvider()), // Add ChatProvider
+        ChangeNotifierProvider(create: (_) => CalorieProvider()),
       ],
       child: MaterialApp(
         title: 'Flutter Demo',
