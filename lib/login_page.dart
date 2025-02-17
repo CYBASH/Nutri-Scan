@@ -11,6 +11,8 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen> {
   bool isLogin = true;
   bool _isChecked = false;
+  bool _showPassword = false; // For toggling password visibility
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final AuthService _authService = AuthService(); // Use AuthService
@@ -61,11 +63,31 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
     } catch (e) {
+      String errorMessage = 'An error occurred. Please try again later.';
+
+      if (e is FirebaseAuthException) {
+        print("E code ----------------> " + e.code);
+        // Handle specific Firebase errors
+        if (e.code == 'invalid-credential') {
+          errorMessage = 'Enter correct email or password.';
+        } else if (e.code == 'channel-error') {
+          errorMessage = 'The email address is not valid.';
+        } else if (e.code == 'email-already-in-use') {
+          errorMessage = 'The email address is already in use.';
+        } else if (e.code == 'weak-password') {
+          errorMessage = 'The password is too weak.';
+        } else if (e.code == 'invalid-email') {
+          errorMessage = 'The email address is invalid.';
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(content: Text(errorMessage)),
       );
     }
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +112,6 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
             ),
             SizedBox(height: 20),
-            SizedBox(height: 20),
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
@@ -101,11 +122,24 @@ class _AuthScreenState extends State<AuthScreen> {
             SizedBox(height: 10),
             TextField(
               controller: _passwordController,
-              obscureText: true,
+              obscureText: !_showPassword,
               decoration: InputDecoration(
                 labelText: 'Password',
                 border: UnderlineInputBorder(),
               ),
+            ),
+            Row(
+              children: [
+                Checkbox(
+                  value: _showPassword,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _showPassword = value ?? false;
+                    });
+                  },
+                ),
+                Text('Show Password'),
+              ],
             ),
             if (!isLogin)
               Row(
@@ -138,7 +172,6 @@ class _AuthScreenState extends State<AuthScreen> {
                     color: Colors.white,
                   ),
                 ),
-
               ),
             ),
             SizedBox(height: 20),

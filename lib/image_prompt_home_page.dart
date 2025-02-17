@@ -59,7 +59,7 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
           IconButton(
             // icon: const Icon(Icons.clear),
             icon: const Icon(
-              Icons.clear_outlined,
+              Icons.delete,
               color: Colors.red,  // Set the icon color to red
             ),
             onPressed: _clearChat, // Call clear chat method

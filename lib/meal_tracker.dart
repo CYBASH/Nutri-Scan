@@ -459,9 +459,10 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
       }
     } catch (e) {
       print('Error in Gemini API call: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to analyze image: ${e.toString()}')),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text('Failed to analyze image: ${e.toString()}')),
+      // );
+      _handleNutritionResponse(context , "No food items found");
     }
   }
 

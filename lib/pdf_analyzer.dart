@@ -119,6 +119,18 @@ class HistoryPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('History'),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.delete,
+              color: Colors.red,  // Set the icon color to red
+            ),
+            onPressed: () {
+              // Show a confirmation dialog before clearing history
+              _showClearHistoryDialog(context);
+            },
+          ),
+        ],
       ),
       body: Consumer<PdfProvider>(
         builder: (context, provider, child) {
@@ -148,8 +160,6 @@ class HistoryPage extends StatelessWidget {
                 );
               },
             );
-
-
           }
         },
       ),
@@ -178,4 +188,34 @@ class HistoryPage extends StatelessWidget {
       },
     );
   }
+
+  // Function to show confirmation dialog before clearing history
+  void _showClearHistoryDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Clear History'),
+          content: Text('Are you sure you want to clear all history?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // Clear the history using the PdfProvider
+                context.read<PdfProvider>().clearHistory();
+                Navigator.of(context).pop();
+              },
+              child: Text("Yes"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("No"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
+

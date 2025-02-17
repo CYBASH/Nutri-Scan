@@ -7,7 +7,7 @@ class ChatProvider extends ChangeNotifier {
   List<ChatMessage> messages = [];
 
   ChatUser currentUser = ChatUser(id: "0", firstName: "User");
-  ChatUser geminiUser = ChatUser(id: "1", firstName: "Gemini");
+  ChatUser geminiUser = ChatUser(id: "1", firstName: "NutriScan AI");
 
   void addMessage(ChatMessage message) {
     messages.insert(0, message);

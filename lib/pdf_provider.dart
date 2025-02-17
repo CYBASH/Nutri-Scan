@@ -14,6 +14,12 @@ class PdfProvider extends ChangeNotifier {
 
   List<Map<String, dynamic>> get history => _history;
 
+  // Method to clear the history
+  void clearHistory() {
+    _history.clear();
+    notifyListeners(); // Notify listeners to update the UI
+  }
+
   void setPdfFile(File file) {
     _pdfFile = file;
     _summary = null; // Reset summary when a new file is picked
@@ -89,7 +95,7 @@ class PdfProvider extends ChangeNotifier {
   // Method to summarize text (as before)
   Future<String> _summarizeText(String text) async {
     final response = await http.post(
-      Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyCX8Y1DlsAL33OqtyIXIt_VojqmKSKkJIU'),
+      Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyARtKqdqIqsDrqM0RKnQeuWbqqdiyFZHXI'),
       headers: {
         'Content-Type': 'application/json',
       },
