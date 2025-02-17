@@ -104,6 +104,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
 
         1. First identify all food items visible in the image
         2. Take an standard amount of weight like 1 serving of middle age human of food item.
+        3. If the provided image contains no food items just reply with "No food items found".
      Display only guess numbers. provide the following nutritional values:
 
         Format your response exactly like this for each food item:
@@ -320,6 +321,61 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
     );
   }
 
+  bool containsNoFoodItems(String response) {
+    return response.contains("No food items found");
+  }
+
+  void _handleNutritionResponse(BuildContext context, String response) {
+    if (response.contains("No food items found") || response.contains("Nofood items found") || response.contains("Nofooditems found") || response.contains("Nofooditemsfound")) {
+      print("No food executed...........");
+      // Show a message or handle the case when no food items are detected
+      _showNoFoodItemsFoundDialog(context);
+    } else {
+      // Proceed with parsing and showing the nutrition data in a dialog
+      _showNutritionDialog(context, response);
+    }
+  }
+
+
+  void _showNoFoodItemsFoundDialog(BuildContext context) {
+    print("-------------------------------------------------------------------------------------------");
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'No Food Items Found',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 16),
+                Text('The image does not contain any recognizable food items.'),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text('Close'),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
   void _showNutritionDialog(BuildContext context, String response) {
     String cleanedResponse = _cleanResponse(response);
     Map<String, String> nutritionData = _parseNutritionData(cleanedResponse);
@@ -396,7 +452,8 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
       if (fullResponse.isNotEmpty) {
 
         fullResponse = formatNutritionResponse(fullResponse);
-        _showNutritionDialog(context, fullResponse);
+        // _showNutritionDialog(context, fullResponse);
+        _handleNutritionResponse(context, fullResponse);
         print(fullResponse);
         print("------------------------------");
       }
