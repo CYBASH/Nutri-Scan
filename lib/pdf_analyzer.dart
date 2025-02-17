@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'pdf_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'theme_provider.dart'; // Import your ThemeProvider
-// import 'splash_screen.dart';
 
 class PDFAnalyzer extends StatefulWidget {
   @override
@@ -16,7 +15,6 @@ class _PDFAnalyzerState extends State<PDFAnalyzer> {
 
   @override
   Widget build(BuildContext context) {
-
     final themeProvider = Provider.of<ThemeProvider>(context);
     bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
 
@@ -55,6 +53,8 @@ class _PDFAnalyzerState extends State<PDFAnalyzer> {
                   child: const Text('Pick PDF'),
                 ),
                 const SizedBox(height: 20), // Added spacing
+
+                // Display the summary or loading/error message
                 Consumer<PdfProvider>(
                   builder: (context, provider, child) {
                     if (provider.isLoading) {
@@ -64,7 +64,9 @@ class _PDFAnalyzerState extends State<PDFAnalyzer> {
                         padding: const EdgeInsets.all(8.0),
                         child: Text('Error: ${provider.error}'),
                       );
-                    } else if (provider.summary != null) {
+                    } else if (provider.history.isNotEmpty) {
+                      // Display the most recent summary
+                      final recentSummary = provider.history.last['summary'];
                       return Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(10),
@@ -73,8 +75,8 @@ class _PDFAnalyzerState extends State<PDFAnalyzer> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          provider.summary!,
-                          style: TextStyle(fontSize: 16),
+                          recentSummary,
+                          style: const TextStyle(fontSize: 16),
                         ),
                       );
                     } else {
@@ -82,11 +84,98 @@ class _PDFAnalyzerState extends State<PDFAnalyzer> {
                     }
                   },
                 ),
+
+
+                const SizedBox(height: 20), // Added spacing
+
+                // Button to navigate to the HistoryPage
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => HistoryPage()),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isDarkMode ? Colors.green[800] : Colors.green,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Show History'),
+                ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+
+
+class HistoryPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('History'),
+      ),
+      body: Consumer<PdfProvider>(
+        builder: (context, provider, child) {
+          if (provider.history.isEmpty) {
+            return Center(child: Text("No previous analyses."));
+          } else {
+            return ListView.builder(
+              padding: const EdgeInsets.all(8.0),
+              itemCount: provider.history.length,
+              itemBuilder: (context, index) {
+                final historyItem = provider.history[index];
+                final String filePath = historyItem['pdfFile']; // Stored as a String
+                final String fileName = filePath.split('/').last; // Extract only file name
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 4,
+                  child: ListTile(
+                    title: Text(fileName), // Display only file name
+                    onTap: () {
+                      _showSummaryDialog(context, historyItem['summary']);
+                    },
+                  ),
+                );
+              },
+            );
+
+
+          }
+        },
+      ),
+    );
+  }
+
+  // Function to show the summary in a dialog when the card is tapped
+  void _showSummaryDialog(BuildContext context, String summary) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Summary'),
+          content: SingleChildScrollView(
+            child: Text(summary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text("Close"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

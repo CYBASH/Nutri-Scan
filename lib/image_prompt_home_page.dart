@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:flutter/material.dart';
@@ -5,7 +6,8 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'chat_provider.dart';
-import 'theme_provider.dart'; // Import your theme provider
+import 'theme_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ImageScanHomePage extends StatefulWidget {
   const ImageScanHomePage({super.key});
@@ -17,58 +19,97 @@ class ImageScanHomePage extends StatefulWidget {
 class _ImageScanHomePageState extends State<ImageScanHomePage> {
   final Gemini gemini = Gemini.instance;
 
+  @override
+  void initState() {
+    super.initState();
+    _loadChatMessages();
+  }
+
+  void _loadChatMessages() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String>? messages = prefs.getStringList('chat_messages');
+
+    if (messages != null) {
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      List<ChatMessage> chatMessages = messages.map((msg) => ChatMessage.fromJson(jsonDecode(msg))).toList();
+      chatProvider.setMessages(chatMessages);
+    }
+  }
+
+  // Method to clear chat
+  void _clearChat() async {
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    chatProvider.clearMessages();
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('chat_messages');
+  }
 
   @override
   Widget build(BuildContext context) {
     final chatProvider = Provider.of<ChatProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
         title: const Text("NutriScan"),
+        actions: [
+          IconButton(
+            // icon: const Icon(Icons.clear),
+            icon: const Icon(
+              Icons.clear_outlined,
+              color: Colors.red,  // Set the icon color to red
+            ),
+            onPressed: _clearChat, // Call clear chat method
+          ),
+        ],
       ),
       body: DashChat(
-        inputOptions: InputOptions(trailing: [
-          IconButton(
-              onPressed: _sendMediaMessage, icon: const Icon(Icons.image))
-        ],
+        inputOptions: InputOptions(
+          trailing: [
+            IconButton(
+              onPressed: _sendMediaMessage,
+              icon: const Icon(Icons.image),
+            ),
+          ],
           sendButtonBuilder: (Function() onSend) {
             return IconButton(
-              icon: Icon(Icons.send, color: isDarkMode ? Colors.blue[1000] : Colors.blue[500],), // Change the color here
+              icon: Icon(
+                Icons.send,
+                color: isDarkMode ? Colors.blue[1000] : Colors.blue[500],
+              ),
               onPressed: onSend,
             );
           },
           inputTextStyle: TextStyle(
-          color: isDarkMode ? Colors.white : Colors.black, // Text input color
-        ),
-        inputDecoration: InputDecoration(
-          filled: true,
-          fillColor: isDarkMode ? Colors.grey[800] : Colors.white, // Input field background
-          hintText: "Type a message...",
-          hintStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]), // Hint text color
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: BorderSide(color: isDarkMode ? Colors.white70 : Colors.black26),
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
+          inputDecoration: InputDecoration(
+            filled: true,
+            fillColor: isDarkMode ? Colors.grey[800] : Colors.white,
+            hintText: "Type a message...",
+            hintStyle: TextStyle(color: isDarkMode ? Colors.grey[400] : Colors.grey[600]),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: BorderSide(color: isDarkMode ? Colors.white70 : Colors.black26),
+            ),
           ),
         ),
-        ),
-
-
         currentUser: chatProvider.currentUser,
         onSend: _sendMessage,
         messages: chatProvider.messages,
         messageOptions: MessageOptions(
-          currentUserContainerColor: isDarkMode ? Colors.green.shade100 : Colors.blue, // Dynamic color
-          containerColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300, // Other user's chat bubble
-          textColor: isDarkMode ? Colors.white : Colors.black, // Adapts to dark mode
+          currentUserContainerColor: isDarkMode ? Colors.green.shade100 : Colors.blue,
+          containerColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300,
+          textColor: isDarkMode ? Colors.white : Colors.black,
         ),
-
       ),
     );
   }
 
-  void _sendMessage(ChatMessage chatMessage, {Uint8List? imageData}) {
+  void _sendMessage(ChatMessage chatMessage, {Uint8List? imageData}) async {
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     chatProvider.addMessage(chatMessage);
 
@@ -77,10 +118,6 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
 
       List<Uint8List>? images;
       if (imageData != null) {
-
-        // String imageQuestion = "I am making an android application to find and calculate the approximate Calories , Protiens , Fats and Carbs in a food item. I will give you an image at input, you need to identify the food item in the image and give me the approximate calories , protiens , fats and carbs of that food item in the image.";
-        // gemini.streamGenerateContent(imageQuestion);
-        // question = "Now analyse the food item and give me the output i asked before in the format **Calories: 60 kcal , Protein: 0.8g , Fat: 0.2g , Carbs: 15g. per units** . Also the each value should be in new line.";
         question = """You are an expert in nutritionist where you need to see the food items from the image
         and calculate the total calories, also provide the details of every food items with calories intake
     is below format.
@@ -98,10 +135,13 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
       }
       gemini.streamGenerateContent(question, images: images).listen((event) {
         String response = event.content?.parts?.fold(
-            "", (previous, current) => "$previous ${current.text}") ??
-            "";
+            "", (previous, current) => "$previous ${current.text}") ?? "";
         chatProvider.updateLastMessage(response);
       });
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      List<String> messages = chatProvider.messages.map((msg) => msg.toJson().toString()).toList();
+      await prefs.setStringList('chat_messages', messages);
     } catch (e) {
       print(e);
     }
@@ -118,7 +158,6 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
       ChatMessage chatMessage = ChatMessage(
         user: chatProvider.currentUser,
         createdAt: DateTime.now(),
-        // text: "Identify the thing in the picture.",
         medias: [
           ChatMedia(
             url: file.path,

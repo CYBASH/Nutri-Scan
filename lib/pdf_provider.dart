@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PdfProvider extends ChangeNotifier {
   File? _pdfFile;
   String? _summary;
   bool _isLoading = false;
   String? _error;
+  List<Map<String, dynamic>> _history = [];
+
+  List<Map<String, dynamic>> get history => _history;
 
   void setPdfFile(File file) {
     _pdfFile = file;
@@ -28,11 +32,18 @@ class PdfProvider extends ChangeNotifier {
         notifyListeners();
 
         final text = await _extractTextFromPdf(_pdfFile!);
-        print("Extracted text: $text"); // Debugging: Print extracted text
         final summary = await _summarizeText(text);
-        print("Summarized text: $summary"); // Debugging: Print summarized text
 
         _summary = summary;
+
+        // Add to history
+        _history.add({
+          'pdfFile': _pdfFile!.path,  // Save file path instead of the file itself
+          'summary': summary,
+        });
+
+        // Save the updated history to shared preferences
+        await _saveHistoryToLocalStorage();
       } catch (e) {
         _error = e.toString();
       } finally {
@@ -42,6 +53,26 @@ class PdfProvider extends ChangeNotifier {
     }
   }
 
+  // Method to load history from local storage
+  Future<void> _loadHistoryFromLocalStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final historyJson = prefs.getString('pdf_history');
+
+    if (historyJson != null) {
+      List<dynamic> historyList = jsonDecode(historyJson);
+      _history = historyList.map((item) => Map<String, dynamic>.from(item)).toList();
+      notifyListeners();
+    }
+  }
+
+  // Method to save history to local storage
+  Future<void> _saveHistoryToLocalStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final historyJson = jsonEncode(_history);
+    prefs.setString('pdf_history', historyJson);
+  }
+
+  // Method to extract text from PDF (as before)
   Future<String> _extractTextFromPdf(File file) async {
     final document = PdfDocument(inputBytes: file.readAsBytesSync());
     final textExtractor = PdfTextExtractor(document);
@@ -55,6 +86,7 @@ class PdfProvider extends ChangeNotifier {
     return extractedText;
   }
 
+  // Method to summarize text (as before)
   Future<String> _summarizeText(String text) async {
     final response = await http.post(
       Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyCX8Y1DlsAL33OqtyIXIt_VojqmKSKkJIU'),
@@ -81,5 +113,10 @@ class PdfProvider extends ChangeNotifier {
     } else {
       throw Exception('Failed to summarize text: ${response.body}');
     }
+  }
+
+  // Constructor to load history when PdfProvider is initialized
+  PdfProvider() {
+    _loadHistoryFromLocalStorage();
   }
 }
