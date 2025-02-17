@@ -2,19 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:nutri_scan/settings.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'calorie_provider.dart';
-import 'consts.dart';
 import 'image_prompt_home_page.dart'; // Import Chatbot HomePage
 import 'local_variables.dart';
 import 'pdf_analyzer.dart'; // Import PDF Analyzer HomePage
 import 'meal_tracker.dart';
 import 'package:provider/provider.dart';
 import 'theme_provider.dart'; // Import the ThemeProvider
+import 'package:intl/intl.dart';
 
 
 class HomePage extends StatelessWidget {
-
-
-
   Widget calorieText(String title, String value) {
     return Row(
       children: [
@@ -36,26 +33,25 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final calorieProvider = Provider.of<CalorieProvider>(context);
-
-    // Fetch data when HomePage builds
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      calorieProvider.fetchCalorieData();
-    });
-
-
     final themeProvider = Provider.of<ThemeProvider>(context);
     bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
 
-    double calories = Provider.of<CalorieProvider>(context).consumedCalories;
-    double consumedProtein = Provider.of<CalorieProvider>(context).consumedProtein;
-    double consumedCarbs = Provider.of<CalorieProvider>(context).consumedCarbs;
-    double consumedFat = Provider.of<CalorieProvider>(context).consumedFat;
-    double consumedFiber = Provider.of<CalorieProvider>(context).consumedFiber;
-    double percent = Provider.of<CalorieProvider>(context).percent;
+    // Get today's date formatted
+    DateTime now = DateTime.now();
+    String todayDate = DateFormat('EEEE, MMMM d').format(now);
 
+    // Fetch today's data when HomePage builds
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      calorieProvider.fetchTodayCalorieData();
+    });
 
+    double calories = calorieProvider.consumedCalories;
+    double consumedProtein = calorieProvider.consumedProtein;
+    double consumedCarbs = calorieProvider.consumedCarbs;
+    double consumedFat = calorieProvider.consumedFat;
+    double consumedFiber = calorieProvider.consumedFiber;
+    double percent = calorieProvider.percent;
 
     return Scaffold(
       appBar: AppBar(
@@ -68,15 +64,33 @@ class HomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Calorie Goal", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              // Today's date display
+              Padding(
+                padding: const EdgeInsets.only(bottom: 20),
+                child: Text(
+                  todayDate,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                  ),
+                ),
+              ),
+              Text(
+                  "Today's Calorie Goal",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)
+              ),
               SizedBox(height: 10),
               Row(
                 children: [
                   CircularPercentIndicator(
                     radius: 60.0,
                     lineWidth: 10.0,
-                    percent: percent,
-                    center: Text("${(percent * 100).toStringAsFixed(1)}%", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    percent: percent > 1.0 ? 1.0 : percent,
+                    center: Text(
+                        "${(percent * 100).toStringAsFixed(1)}%",
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)
+                    ),
                     progressColor: isDarkMode ? Colors.lightBlueAccent : Colors.blue[1000],
                     backgroundColor: isDarkMode ? Colors.white : Colors.black,
                     circularStrokeCap: CircularStrokeCap.round,
@@ -87,12 +101,21 @@ class HomePage extends StatelessWidget {
                     children: [
                       calorieText("Daily Goal: ", "${dailyGoal.toStringAsFixed(0)} cal"),
                       calorieText("Consumed: ", "${calories.toStringAsFixed(0)} cal"),
-                      calorieText("Left: ", "${(dailyGoal - calories).toStringAsFixed(0)} cal"),
+                      calorieText("Remaining: ", "${(dailyGoal - calories).toStringAsFixed(0)} cal"),
                     ],
                   ),
                 ],
               ),
               SizedBox(height: 20),
+              Text(
+                "Today's Nutrients",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+              SizedBox(height: 15),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -103,10 +126,30 @@ class HomePage extends StatelessWidget {
                 ],
               ),
               Divider(color: Colors.grey.shade800, thickness: 1),
-              SizedBox(height: 20),
-              // Text("Food Intake", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              SizedBox(height: 10),
-              SizedBox(height: 20),
+              if (percent >= 1.0)
+                Container(
+                  margin: EdgeInsets.only(top: 20),
+                  padding: EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.red.shade900 : Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning, color: isDarkMode ? Colors.white : Colors.red),
+                      SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          "You've reached your calorie goal for today!",
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white : Colors.red.shade900,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),

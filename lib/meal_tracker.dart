@@ -3,9 +3,7 @@ import 'dart:typed_data';  // This is the correct import for Uint8List
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart' as riverpod;
 import 'package:intl/intl.dart';
-import 'package:nutri_scan/consts.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -13,7 +11,6 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:provider/provider.dart';
 import 'local_variables.dart';
 import 'theme_provider.dart'; // Import your theme provider
-import 'meal_provider.dart';
 
 class MealTrackerUI extends StatefulWidget {
   @override
@@ -27,16 +24,18 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
   final MealService mealService = MealService();
 
   List<Map<String, dynamic>> meals = []; // Store meals locally
+  DateTime selectedDate = DateTime.now(); // Add selected date state
 
   @override
   void initState() {
     super.initState();
-    fetchMealsFromFirebase(); // Fetch meals when screen loads
+    fetchMealsFromFirebase(selectedDate); // Fetch meals when screen loads
+
   }
 
-  Future<void> fetchMealsFromFirebase() async {
+  Future<void> fetchMealsFromFirebase(DateTime date) async {
     try {
-      List<Map<String, dynamic>> fetchedMeals = await mealService.fetchMeals();
+      List<Map<String, dynamic>> fetchedMeals = await mealService.fetchMealsByDate(date);
 
       double totalCalories = 0.0;
       double totalProtein = 0.0;
@@ -126,16 +125,6 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
         Remember to be precise and avoid any unnecessary text or explanations.
         Remember to give response in single line
         """;
-
-  // void _pickImage() async {
-  //   final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-  //   if (pickedFile != null) {
-  //     setState(() {
-  //       _selectedImage = File(pickedFile.path);
-  //       _sendMessage(_selectedImage!);
-  //     });
-  //   }
-  // }
 
   void addNewMeal() async {
     try {
@@ -279,46 +268,6 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
     RegExp regex = RegExp(r'[-+]?\d*\.?\d+'); // Matches integers & decimals
     Match? match = regex.firstMatch(input);
     return match?.group(0) ?? "0.0"; // Returns the number or "0.0" if not found
-  }
-
-
-  // Create widgets from parsed nutrition data
-  Widget _createNutritionCard(Map<String, String> data, bool isTotal) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      margin: EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: isTotal ? Colors.blue.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: data.entries.map((entry) {
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  entry.key,
-                  style: TextStyle(
-                    fontWeight: entry.key == 'Item' || isTotal
-                        ? FontWeight.bold
-                        : FontWeight.normal,
-                  ),
-                ),
-                Text(
-                  entry.value,
-                  style: TextStyle(
-                    fontWeight: isTotal ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
   }
 
   bool containsNoFoodItems(String response) {
@@ -522,8 +471,9 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
     final themeProvider = Provider.of<ThemeProvider>(context);
     bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
 
-    DateTime now = DateTime.now();
-    String formattedDate = DateFormat('EEE d').format(now);
+    // DateTime now = DateTime.now();
+    // String formattedDate = DateFormat('EEE d').format(now);
+    String formattedDate = DateFormat('EEE d').format(selectedDate);
 
     return Scaffold(
       appBar: AppBar(
@@ -543,12 +493,16 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
               onPressed: () {
                 showDatePicker(
                   context: context,
-                  initialDate: now,
+                  // initialDate: now,
+                  initialDate: selectedDate,
                   firstDate: DateTime(2020),
                   lastDate: DateTime(2030),
-                ).then((selectedDate) {
-                  if (selectedDate != null) {
-                    print("Selected Date: ${DateFormat('EEE d').format(selectedDate)}");
+                ).then((date) {
+                  if (date != null) {
+                    setState(() {
+                      selectedDate = date;
+                    });
+                    fetchMealsFromFirebase(date);
                   }
                 });
               },
@@ -569,7 +523,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
                   CircularPercentIndicator(
                     radius: 60.0,
                     lineWidth: 10.0,
-                    percent: percent,
+                    percent: percent > 1.0 ? 1.0 : percent,
                     center: Text("${(percent * 100).toStringAsFixed(1)}%", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                     progressColor: isDarkMode ? Colors.lightBlueAccent : Colors.blue[1000],
                     backgroundColor: isDarkMode ? Colors.white : Colors.black,
@@ -607,58 +561,6 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
           ),
         ),
       ),
-
-      // body: SingleChildScrollView(
-      //   child: Padding(
-      //     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      //     child: Column(
-      //       crossAxisAlignment: CrossAxisAlignment.start,
-      //       children: [
-      //         Text("Calorie Goal", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-      //         SizedBox(height: 10),
-      //         Row(
-      //           children: [
-      //             CircularPercentIndicator(
-      //               radius: 60.0,
-      //               lineWidth: 10.0,
-      //               percent: percent,
-      //               center: Text("${(percent * 100).toStringAsFixed(1)}%", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      //               progressColor: isDarkMode ? Colors.lightBlueAccent : Colors.blue[1000],
-      //               backgroundColor: isDarkMode ? Colors.white : Colors.black,
-      //               circularStrokeCap: CircularStrokeCap.round,
-      //             ),
-      //             SizedBox(width: 20),
-      //             Column(
-      //               crossAxisAlignment: CrossAxisAlignment.start,
-      //               children: [
-      //                 calorieText("Daily Goal: ", "${dailyGoal.toStringAsFixed(0)} cal"),
-      //                 calorieText("Consumed: ", "${consumedCalories.toStringAsFixed(0)} cal"),
-      //                 calorieText("Left: ", "${(dailyGoal - consumedCalories).toStringAsFixed(0)} cal"),
-      //               ],
-      //             ),
-      //           ],
-      //         ),
-      //         SizedBox(height: 20),
-      //         Row(
-      //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      //           children: [
-      //             nutrientInfo("Protein", "${consumedProtein.toStringAsFixed(0)}/${proteinGoal.toStringAsFixed(0)} g"),
-      //             nutrientInfo("Carbs", "${consumedCarbs.toStringAsFixed(0)}/${carbsGoal.toStringAsFixed(0)} g"),
-      //             nutrientInfo("Fat", "${consumedFat.toStringAsFixed(0)}/${fatGoal.toStringAsFixed(0)} g"),
-      //             nutrientInfo("Fiber", "${consumedFiber.toStringAsFixed(0)}/${fiberGoal.toStringAsFixed(0)} g"),
-      //           ],
-      //         ),
-      //         Divider(color: Colors.grey.shade800, thickness: 1),
-      //         SizedBox(height: 20),
-      //         Text("Food Intake", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-      //         SizedBox(height: 10),
-      //         mealCard("Add Food", Icons.add, null, null, _pickImage),
-      //         ...meals.map((meal) => mealCard(meal["title"]!, null, meal["subtitle"], meal["calories"], null, meal["image"])).toList(),
-      //         SizedBox(height: 20),
-      //       ],
-      //     ),
-      //   ),
-      // ),
     );
   }
 
@@ -681,19 +583,6 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
     );
   }
 
-  // Widget mealCard(String title, IconData? icon, String? subtitle, String? calories, VoidCallback? onTap, [String? imagePath]) {
-  //   return Container(
-  //     margin: EdgeInsets.symmetric(vertical: 8),
-  //     child: ListTile(
-  //       leading: imagePath != null && imagePath.isNotEmpty ? Image.file(File(imagePath), width: 40, height: 40, fit: BoxFit.cover) : (icon != null ? Icon(icon, color: Colors.grey) : null),
-  //       title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-  //       subtitle: subtitle != null ? Text(subtitle, style: TextStyle(color: Colors.grey.shade900)) : null,
-  //       trailing: calories != null ? Text(calories, style: TextStyle(fontWeight: FontWeight.bold)) : null,
-  //       onTap: onTap,
-  //     ),
-  //   );
-  // }
-
   Widget mealCard(
       String title,
       IconData? icon,
@@ -702,6 +591,8 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
       VoidCallback? onTap,
       [String? imagePath]
       ) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
@@ -719,7 +610,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
         )
             : (icon != null
             ? Icon(icon, color: Colors.grey, size: 40)
-            : Image.asset('assets/splash_screen/logo_nutriscan.png', width: 50, height: 50, fit: BoxFit.cover)), // Default placeholder
+            : Image.asset(isDarkMode ? 'assets/logo/logo_nutriscan_dark.png' : 'assets/logo/logo_nutriscan.png', width: 50, height: 50, fit: BoxFit.cover)), // Default placeholder
         title: Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         subtitle: subtitle != null ? Text(subtitle, style: TextStyle(/*color: Colors.grey.shade900*/)) : null,
         trailing: calories != null ? Text(calories, style: TextStyle(fontWeight: FontWeight.bold)) : null,
@@ -768,6 +659,40 @@ class MealService {
   }
 
 
+  Future<List<Map<String, dynamic>>> fetchMealsByDate(DateTime date) async {
+    String? userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      throw Exception("User not logged in");
+    }
+
+    // Create DateTime range for the selected date
+    DateTime startOfDay = DateTime(date.year, date.month, date.day);
+    DateTime endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59);
+
+    QuerySnapshot querySnapshot = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('meals')
+        .where('timestamp', isGreaterThanOrEqualTo: startOfDay)
+        .where('timestamp', isLessThanOrEqualTo: endOfDay)
+        .orderBy('timestamp', descending: true)
+        .get();
+
+    return querySnapshot.docs.map((doc) {
+      return {
+        'mealId': doc.id,
+        'mealName': doc['mealName'] ?? 'Unknown',
+        'calories': (doc['calories'] as num?)?.toDouble() ?? 0.0,
+        'protein': (doc['protein'] as num?)?.toDouble() ?? 0.0,
+        'carbs': (doc['carbs'] as num?)?.toDouble() ?? 0.0,
+        'fat': (doc['fat'] as num?)?.toDouble() ?? 0.0,
+        'fiber': (doc['fiber'] as num?)?.toDouble() ?? 0.0,
+        'imageUrl': doc['imageUrl'] ?? '',
+      };
+    }).toList();
+  }
+
+
   Future<List<Map<String, dynamic>>> fetchMeals() async {
     String? userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
@@ -795,14 +720,4 @@ class MealService {
     }).toList();
 
   }
-
-
-
-
-
 }
-
-
-
-
-

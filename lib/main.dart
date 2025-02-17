@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:nutri_scan/theme_provider.dart';
@@ -23,24 +23,13 @@ void main() async{
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-
-
   // await FirebaseAuth.instance.signInAnonymously();
-
-
-
-  // runApp(
-  //   ChangeNotifierProvider(
-  //     create: (context) => ThemeProvider(),
-  //     child: const MyApp(), // MyApp should be inside the provider
-  //   ),
-  // );
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
-        ChangeNotifierProvider(create: (context) => MealProvider()), // Add MealProvider
+        // ChangeNotifierProvider(create: (context) => MealProvider()), // Add MealProvider
         ChangeNotifierProvider(create: (context) => CalorieProvider()),
       ],
       child: const MyApp(),
