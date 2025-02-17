@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'theme_provider.dart';
 import 'licenses_page.dart'; // Import the custom Licenses Page
+import 'account_settings_page.dart';
 
 class SettingsPage extends StatelessWidget {
   @override
@@ -35,7 +36,12 @@ class SettingsPage extends StatelessWidget {
             leading: Icon(Icons.account_circle),
             title: Text('Account'),
             subtitle: Text('Manage your account settings'),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AccountSettingsPage()),
+              );
+            },
           ),
           ListTile(
             leading: Icon(Icons.info),

@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'home_page.dart';
-import 'theme_provider.dart'; // Ensure you have a ThemeProvider
+import 'login_page.dart'; // Ensure you have a LoginPage
+import 'theme_provider.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -16,7 +18,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 2), // Fade-in duration
+      duration: const Duration(seconds: 2),
       vsync: this,
     );
 
@@ -25,14 +27,20 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       curve: Curves.easeIn,
     );
 
-    _controller.forward(); // Start fade-in animation
+    _controller.forward();
 
-    // Navigate to HomePage after 5 seconds
-    Future.delayed(Duration(seconds: 5), () {
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (context) => HomePage(),
-      ));
-    });
+    _checkUserAuth();
+  }
+
+  void _checkUserAuth() async {
+    await Future.delayed(Duration(seconds: 5)); // Keep the delay for animation
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => user == null ? AuthScreen() : HomePage()),
+      );
+    }
   }
 
   @override
@@ -56,8 +64,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               opacity: _animation,
               child: Image.asset(
                 isDarkMode
-                    ? 'assets/splash_screen/logo_nutriscan_dark.png' // Dark mode logo
-                    : 'assets/splash_screen/logo_nutriscan.png', // Light mode logo
+                    ? 'assets/splash_screen/logo_nutriscan_dark.png'
+                    : 'assets/splash_screen/logo_nutriscan.png',
                 width: 200,
               ),
             ),

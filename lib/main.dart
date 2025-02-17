@@ -4,6 +4,8 @@ import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:nutri_scan/theme_provider.dart';
 import 'package:provider/provider.dart';
 import 'consts.dart';
+import 'home_page.dart';
+import 'login_page.dart';
 import 'meal_provider.dart';
 import 'splash_screen.dart';
 import 'pdf_provider.dart';
@@ -23,7 +25,7 @@ void main() async{
 
 
 
-  await FirebaseAuth.instance.signInAnonymously();
+  // await FirebaseAuth.instance.signInAnonymously();
 
 
 
@@ -60,11 +62,18 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CalorieProvider()),
       ],
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         title: 'Flutter Demo',
         theme: ThemeData.light(),
         darkTheme: ThemeData.dark(),
         themeMode: themeProvider.themeMode,
-        home: SplashScreen(),
+        // home: FirebaseAuth.instance.currentUser == null ? LoginPage() : SplashScreen(),
+        initialRoute: '/splash',
+        routes: {
+          '/splash': (context) => SplashScreen(),
+          '/home': (context) => HomePage(),
+          '/login': (context) => AuthScreen(), // ADD THIS LINE
+        },
       ),
     );
   }
