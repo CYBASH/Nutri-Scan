@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_scan/profile.dart';
 import 'package:nutri_scan/settings.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'calorie_provider.dart';
@@ -10,7 +11,6 @@ import 'package:provider/provider.dart';
 import 'theme_provider.dart'; // Import the ThemeProvider
 import 'package:intl/intl.dart';
 
-
 class HomePage extends StatelessWidget {
   Widget calorieText(String title, String value) {
     return Row(
@@ -21,12 +21,20 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget nutrientInfo(String name, String value) {
+  Widget nutrientInfo(String name, String value, double consumedAmount, double goalAmount, Color progressBarColor) {
+    double progress = consumedAmount / goalAmount;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        Text(value, style: TextStyle(fontSize: 14, color: Colors.grey)),
+        Text(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        Text(value, style: TextStyle(fontSize: 13, color: Colors.grey)),
+        SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: progress.isNaN ? 0.0 : progress, // Avoid NaN if consumedAmount is 0
+          valueColor: AlwaysStoppedAnimation(progressBarColor),
+          backgroundColor: Colors.grey.shade300,
+        ),
       ],
     );
   }
@@ -91,7 +99,7 @@ class HomePage extends StatelessWidget {
                         "${(percent * 100).toStringAsFixed(1)}%",
                         style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)
                     ),
-                    progressColor: isDarkMode ? Colors.lightBlueAccent : Colors.blue[1000],
+                    progressColor: isDarkMode ? Colors.lightBlueAccent : Colors.lightBlueAccent,
                     backgroundColor: isDarkMode ? Colors.white : Colors.black,
                     circularStrokeCap: CircularStrokeCap.round,
                   ),
@@ -99,9 +107,15 @@ class HomePage extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      calorieText("Daily Goal: ", "${dailyGoal.toStringAsFixed(0)} cal"),
+                      GestureDetector(
+                        onTap: () {
+                          // Show the dialog to set the daily goal
+                          _showSetDailyGoalDialog(context, calorieProvider);
+                        },
+                        child: calorieText("Daily Goal: ", "${calorieProvider.dailyGoal.toStringAsFixed(0)} cal"),
+                      ),
                       calorieText("Consumed: ", "${calories.toStringAsFixed(0)} cal"),
-                      calorieText("Remaining: ", "${(dailyGoal - calories).toStringAsFixed(0)} cal"),
+                      calorieText("Remaining: ", "${(calorieProvider.dailyGoal - calories).toStringAsFixed(0)} cal"),
                     ],
                   ),
                 ],
@@ -116,13 +130,75 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 15),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //   children: [
+              //     nutrientInfo("Protein", "${consumedProtein.toStringAsFixed(0)}/${proteinGoal.toStringAsFixed(0)} g"),
+              //     nutrientInfo("Carbs", "${consumedCarbs.toStringAsFixed(0)}/${carbsGoal.toStringAsFixed(0)} g"),
+              //     nutrientInfo("Fat", "${consumedFat.toStringAsFixed(0)}/${fatGoal.toStringAsFixed(0)} g"),
+              //     nutrientInfo("Fiber", "${consumedFiber.toStringAsFixed(0)}/${fiberGoal.toStringAsFixed(0)} g"),
+              //   ],
+              // ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  nutrientInfo("Protein", "${consumedProtein.toStringAsFixed(0)}/${proteinGoal.toStringAsFixed(0)} g"),
-                  nutrientInfo("Carbs", "${consumedCarbs.toStringAsFixed(0)}/${carbsGoal.toStringAsFixed(0)} g"),
-                  nutrientInfo("Fat", "${consumedFat.toStringAsFixed(0)}/${fatGoal.toStringAsFixed(0)} g"),
-                  nutrientInfo("Fiber", "${consumedFiber.toStringAsFixed(0)}/${fiberGoal.toStringAsFixed(0)} g"),
+                  Expanded(
+                    child: Container(
+                      // color: Colors.grey.shade900,
+                      height: 70,
+                      padding: EdgeInsets.all(8),
+                      child: nutrientInfo(
+                        "Protein",
+                        "${consumedProtein.toStringAsFixed(0)}/${proteinGoal.toStringAsFixed(0)} g",
+                        consumedProtein,
+                        proteinGoal,
+                        Colors.pinkAccent.shade100, // Change color to your desired one
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+
+                      height: 70,
+                      padding: EdgeInsets.all(8),
+                      child: nutrientInfo(
+                        "Carbs",
+                        "${consumedCarbs.toStringAsFixed(0)}/${carbsGoal.toStringAsFixed(0)} g",
+                        consumedCarbs,
+                        carbsGoal,
+                        Colors.green.shade300, // Different color for Carbs
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      // color: Colors.grey.shade900,
+                      height: 70,
+                      padding: EdgeInsets.all(8),
+                      child: nutrientInfo(
+                        "Fat",
+                        "${consumedFat.toStringAsFixed(0)}/${fatGoal.toStringAsFixed(0)} g",
+                        consumedFat,
+                        fatGoal,
+                        Colors.redAccent, // Different color for Fat
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Container(
+                      // color: Colors.grey.shade900,
+                      height: 70,
+                      padding: EdgeInsets.all(8),
+                      child: nutrientInfo(
+                        "Fiber",
+                        "${consumedFiber.toStringAsFixed(0)}/${fiberGoal.toStringAsFixed(0)} g",
+                        consumedFiber,
+                        fiberGoal,
+                        Colors.orange, // Different color for Fiber
+                      ),
+                    ),
+                  ),
                 ],
               ),
               Divider(color: Colors.grey.shade800, thickness: 1),
@@ -156,6 +232,43 @@ class HomePage extends StatelessWidget {
       ),
     );
   }
+
+  void _showSetDailyGoalDialog(BuildContext context, CalorieProvider calorieProvider) {
+    TextEditingController goalController = TextEditingController();
+    goalController.text = calorieProvider.dailyGoal.toStringAsFixed(0);
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Set Your Daily Calorie Goal"),
+          content: TextField(
+            controller: goalController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText: "Enter daily goal",
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                double newGoal = double.tryParse(goalController.text) ?? calorieProvider.dailyGoal;
+                calorieProvider.setDailyGoal(newGoal); // Update the goal
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("Set Goal"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 class MyDrawer extends StatelessWidget {
@@ -167,7 +280,7 @@ class MyDrawer extends StatelessWidget {
         children: <Widget>[
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Colors.blue,
+              color: Colors.deepPurpleAccent.shade200,
             ),
             child: Text(
               'Navigation',
@@ -182,6 +295,17 @@ class MyDrawer extends StatelessWidget {
             title: Text('Home'),
             onTap: () {
               Navigator.pop(context); // Close the drawer
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.person),
+            title: Text('Profile'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => ProfilePage()),
+              );
             },
           ),
           ListTile(
@@ -207,7 +331,7 @@ class MyDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: Icon(Icons.picture_as_pdf),
+            leading: Icon(Icons.fastfood),
             title: Text('Meal Tracker'),
             onTap: () {
               Navigator.pop(context);

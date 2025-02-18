@@ -55,6 +55,7 @@ dependencies:
   firebase_auth: ^5.4.2
   url_launcher: ^6.2.5
   intl: ^0.18.0  # or the latest version
+  firebase_storage: ^12.4.2  # For storing profile images
 #
 #  sqflite: ^2.0.0+3
 #  path_provider: ^2.0.11

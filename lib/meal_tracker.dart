@@ -19,19 +19,49 @@ class MealTrackerUI extends StatefulWidget {
 
 
 class _MealTrackerUIState extends State<MealTrackerUI> {
-
-
   final MealService mealService = MealService();
-
-  List<Map<String, dynamic>> meals = []; // Store meals locally
-  DateTime selectedDate = DateTime.now(); // Add selected date state
+  List<Map<String, dynamic>> meals = [];
+  DateTime selectedDate = DateTime.now();
+  double dailyGoal = 2000.0; // Default value until fetched from Firestore
 
   @override
   void initState() {
     super.initState();
-    fetchMealsFromFirebase(selectedDate); // Fetch meals when screen loads
-
+    _initializeData();
   }
+
+  Future<void> _initializeData() async {
+    await fetchDailyGoal();
+    await fetchMealsFromFirebase(selectedDate);
+  }
+  Future<void> fetchDailyGoal() async {
+    try {
+      String? userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId != null) {
+        DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
+
+        if (docSnapshot.exists) {
+          Map<String, dynamic>? data = docSnapshot.data() as Map<String, dynamic>?;
+          if (data != null && data.containsKey('dailyGoal')) {
+            setState(() {
+              dailyGoal = (data['dailyGoal'] as num).toDouble();
+              // Update percent calculation with new daily goal
+              percent = consumedCalories / dailyGoal;
+              if (percent > 1.0) {
+                percent = 1.0;
+              }
+            });
+          }
+        }
+      }
+    } catch (e) {
+      print("Error fetching daily goal: $e");
+    }
+  }
+
 
   Future<void> fetchMealsFromFirebase(DateTime date) async {
     try {
@@ -62,6 +92,9 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
         meals = updatedMeals;
         consumedCalories = totalCalories;
         percent = consumedCalories / dailyGoal;
+        if (percent > 1.0) {
+          percent = 1.0;
+        }
         targetCalories = dailyGoal - consumedCalories;
 
         consumedProtein = totalProtein;
@@ -453,14 +486,19 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
   }
 
   void calculateNutrients() {
-    consumedCalories += detectedCaloriesInDouble;
-    percent = consumedCalories / dailyGoal;
-    targetCalories = dailyGoal - consumedCalories;
+    setState(() {
+      consumedCalories += detectedCaloriesInDouble;
+      percent = consumedCalories / dailyGoal;
+      if (percent > 1.0) {
+        percent = 1.0;
+      }
+      targetCalories = dailyGoal - consumedCalories;
 
-    consumedProtein = consumedProtein + (detectedProteinsInDouble * 4);
-    consumedCarbs = consumedCarbs + (detectedCarbsInDouble * 4);
-    consumedFat = consumedFat + (detectedFatsInDouble * 9);
-    consumedFiber = consumedFiber + (detectedFiberInDouble * 2);
+      consumedProtein = consumedProtein + (detectedProteinsInDouble * 4);
+      consumedCarbs = consumedCarbs + (detectedCarbsInDouble * 4);
+      consumedFat = consumedFat + (detectedFatsInDouble * 9);
+      consumedFiber = consumedFiber + (detectedFiberInDouble * 2);
+    });
   }
 
 
@@ -479,7 +517,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
       appBar: AppBar(
         elevation: 0,
         title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             Row(
               children: [
@@ -507,6 +545,22 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
                 });
               },
             ),
+            // AnimatedSwitcher(
+            //   duration: Duration(milliseconds: 300),
+            //   child: IconButton(
+            //     key: ValueKey<int>(0),
+            //     icon: Icon(
+            //       Icons.add_circle,
+            //       color: Colors.blueAccent,
+            //       size: 30,
+            //     ),
+            //     onPressed: _pickImage, // Opens "Add Food" option
+            //   ),
+            // ),
+            IconButton(
+              icon: Icon(Icons.add_circle, color: isDarkMode ? Colors.white : Colors.black),
+              onPressed: _pickImage
+            ),
           ],
         ),
       ),
@@ -525,7 +579,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
                     lineWidth: 10.0,
                     percent: percent > 1.0 ? 1.0 : percent,
                     center: Text("${(percent * 100).toStringAsFixed(1)}%", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    progressColor: isDarkMode ? Colors.lightBlueAccent : Colors.blue[1000],
+                    progressColor: isDarkMode ? Colors.lightBlueAccent : Colors.lightBlueAccent,
                     backgroundColor: isDarkMode ? Colors.white : Colors.black,
                     circularStrokeCap: CircularStrokeCap.round,
                   ),
@@ -541,20 +595,80 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
                 ],
               ),
               SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  nutrientInfo("Protein", "${consumedProtein.toStringAsFixed(0)}/${proteinGoal.toStringAsFixed(0)} g"),
-                  nutrientInfo("Carbs", "${consumedCarbs.toStringAsFixed(0)}/${carbsGoal.toStringAsFixed(0)} g"),
-                  nutrientInfo("Fat", "${consumedFat.toStringAsFixed(0)}/${fatGoal.toStringAsFixed(0)} g"),
-                  nutrientInfo("Fiber", "${consumedFiber.toStringAsFixed(0)}/${fiberGoal.toStringAsFixed(0)} g"),
-                ],
-              ),
-              Divider(color: Colors.grey.shade800, thickness: 1),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //   children: [
+              //     nutrientInfo("Protein", "${consumedProtein.toStringAsFixed(0)}/${proteinGoal.toStringAsFixed(0)} g"),
+              //     nutrientInfo("Carbs", "${consumedCarbs.toStringAsFixed(0)}/${carbsGoal.toStringAsFixed(0)} g"),
+              //     nutrientInfo("Fat", "${consumedFat.toStringAsFixed(0)}/${fatGoal.toStringAsFixed(0)} g"),
+              //     nutrientInfo("Fiber", "${consumedFiber.toStringAsFixed(0)}/${fiberGoal.toStringAsFixed(0)} g"),
+              //   ],
+              // ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 100,
+                    padding: EdgeInsets.all(8),
+                    child: nutrientInfo(
+                      "Protein",
+                      "${consumedProtein.toStringAsFixed(0)}/${proteinGoal.toStringAsFixed(0)} g",
+                      consumedProtein,
+                      proteinGoal,
+                      Colors.pinkAccent.shade100, // Change color to your desired one
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    height: 100,
+                    padding: EdgeInsets.all(8),
+                    child: nutrientInfo(
+                      "Carbs",
+                      "${consumedCarbs.toStringAsFixed(0)}/${carbsGoal.toStringAsFixed(0)} g",
+                      consumedCarbs,
+                      carbsGoal,
+                      Colors.green.shade300, // Different color for Carbs
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    height: 100,
+                    padding: EdgeInsets.all(8),
+                    child: nutrientInfo(
+                      "Fat",
+                      "${consumedFat.toStringAsFixed(0)}/${fatGoal.toStringAsFixed(0)} g",
+                      consumedFat,
+                      fatGoal,
+                      Colors.redAccent, // Different color for Fat
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Container(
+                    height: 100,
+                    padding: EdgeInsets.all(8),
+                    child: nutrientInfo(
+                      "Fiber",
+                      "${consumedFiber.toStringAsFixed(0)}/${fiberGoal.toStringAsFixed(0)} g",
+                      consumedFiber,
+                      fiberGoal,
+                      Colors.orange, // Different color for Fiber
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+
+
+            Divider(color: Colors.grey.shade800, thickness: 1),
               SizedBox(height: 20),
               Text("Food Intake", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
-              mealCard("Add Food", Icons.add, null, null, _pickImage),
+              // mealCard("Add Food", Icons.add, null, null, _pickImage),
               ...meals.map((meal) => mealCard(meal["title"]!, null, meal["subtitle"], meal["calories"], null, meal["image"])).toList(),
               SizedBox(height: 20),
             ],
@@ -573,15 +687,35 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
     );
   }
 
-  Widget nutrientInfo(String name, String value) {
+  // Widget nutrientInfo(String name, String value) {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.center,
+  //     children: [
+  //       Text(name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+  //       Text(value, style: TextStyle(fontSize: 14, color: Colors.grey)),
+  //     ],
+  //   );
+  // }
+
+  Widget nutrientInfo(String name, String value, double consumedAmount, double goalAmount, Color progressBarColor) {
+    double progress = consumedAmount / goalAmount;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-        Text(value, style: TextStyle(fontSize: 14, color: Colors.grey)),
+        Text(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+        Text(value, style: TextStyle(fontSize: 13, color: Colors.grey)),
+        SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: progress.isNaN ? 0.0 : progress, // Avoid NaN if consumedAmount is 0
+          valueColor: AlwaysStoppedAnimation(progressBarColor),
+          backgroundColor: Colors.grey.shade300,
+        ),
       ],
     );
   }
+
+
 
   Widget mealCard(
       String title,

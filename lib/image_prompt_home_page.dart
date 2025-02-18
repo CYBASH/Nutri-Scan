@@ -4,6 +4,7 @@ import 'package:dash_chat_2/dash_chat_2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gemini/flutter_gemini.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'chat_provider.dart';
 import 'theme_provider.dart';
@@ -101,6 +102,8 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
         onSend: _sendMessage,
         messages: chatProvider.messages,
         messageOptions: MessageOptions(
+          timeFormat: DateFormat('HH:mm'), // Format the timestamp here
+          showTime: true, // Enable timestamps
           currentUserContainerColor: isDarkMode ? Colors.green.shade100 : Colors.blue,
           containerColor: isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300,
           textColor: isDarkMode ? Colors.white : Colors.black,
@@ -111,6 +114,16 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
 
   void _sendMessage(ChatMessage chatMessage, {Uint8List? imageData}) async {
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+
+    ChatMessage updatedMessage = ChatMessage(
+      user: chatMessage.user,
+      text: chatMessage.text,
+      createdAt: DateTime.now(), // Assign the current timestamp
+      medias: chatMessage.medias,
+      quickReplies: chatMessage.quickReplies,
+    );
+
+
     chatProvider.addMessage(chatMessage);
 
     try {
@@ -155,9 +168,11 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
       Uint8List imageData = await file.readAsBytes();
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
 
-      ChatMessage chatMessage = ChatMessage(
+      // Create a message for the image
+      ChatMessage imageMessage = ChatMessage(
         user: chatProvider.currentUser,
         createdAt: DateTime.now(),
+        text: " ", // Placeholder text to ensure timestamp visibility
         medias: [
           ChatMedia(
             url: file.path,
@@ -167,7 +182,18 @@ class _ImageScanHomePageState extends State<ImageScanHomePage> {
         ],
       );
 
-      _sendMessage(chatMessage, imageData: imageData);
+      // Create a separate message for "Image Sent"
+      ChatMessage textMessage = ChatMessage(
+        user: chatProvider.currentUser,
+        createdAt: DateTime.now(),
+        // text: "Image Sent",
+      );
+
+      // Send both messages
+      chatProvider.addMessage(textMessage);
+      _sendMessage(imageMessage, imageData: imageData);
     }
   }
+
+
 }
