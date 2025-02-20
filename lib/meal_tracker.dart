@@ -19,10 +19,14 @@ class MealTrackerUI extends StatefulWidget {
 
 
 class _MealTrackerUIState extends State<MealTrackerUI> {
+
+  bool isLoading = false;
+
+
   final MealService mealService = MealService();
   List<Map<String, dynamic>> meals = [];
   DateTime selectedDate = DateTime.now();
-  double dailyGoal = 2000.0; // Default value until fetched from Firestore
+  // double dailyGoal = 2000.0; // Default value until fetched from Firestore
 
   @override
   void initState() {
@@ -31,36 +35,47 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
   }
 
   Future<void> _initializeData() async {
-    await fetchDailyGoal();
+    await fetchDailyGoalForDate(DateTime.now());
     await fetchMealsFromFirebase(selectedDate);
   }
-  Future<void> fetchDailyGoal() async {
+  Future<void> fetchDailyGoalForDate(DateTime selectedDate) async {
     try {
       String? userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId != null) {
-        DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
-            .get();
+      if (userId == null) return;
 
-        if (docSnapshot.exists) {
-          Map<String, dynamic>? data = docSnapshot.data() as Map<String, dynamic>?;
-          if (data != null && data.containsKey('dailyGoal')) {
-            setState(() {
-              dailyGoal = (data['dailyGoal'] as num).toDouble();
-              // Update percent calculation with new daily goal
-              percent = consumedCalories / dailyGoal;
-              if (percent > 1.0) {
-                percent = 1.0;
-              }
-            });
-          }
+      // Format the selected date as YYYY-MM-DD (to match Firestore document ID)
+      // String formattedDate =
+      //     "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+      String formattedDate = "${selectedDate.year}-${selectedDate.month}-${selectedDate.day}";
+      // Reference the specific day's goal in Firestore
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('DailyGoals')
+          .doc(formattedDate)
+          .get();
+
+      if (docSnapshot.exists) {
+        Map<String, dynamic>? data = docSnapshot.data() as Map<String, dynamic>?;
+
+        if (data != null && data.containsKey('dailyGoal')) {
+          setState(() {
+            dailyGoal = (data['dailyGoal'] as num).toDouble();
+
+            // Recalculate percentage with new daily goal
+            percent = consumedCalories / dailyGoal;
+            if (percent > 1.0) percent = 1.0;
+          });
         }
+      } else {
+        print("No daily goal found for $formattedDate.");
+        // You can optionally reset the dailyGoal to a default value if none is found
       }
     } catch (e) {
-      print("Error fetching daily goal: $e");
+      print("Error fetching daily goal for date: $e");
     }
   }
+
 
 
   Future<void> fetchMealsFromFirebase(DateTime date) async {
@@ -72,6 +87,8 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
       double totalCarbs = 0.0;
       double totalFat = 0.0;
       double totalFiber = 0.0;
+
+      fetchDailyGoalForDate(date);
 
       List<Map<String, dynamic>> updatedMeals = fetchedMeals.map((meal) {
         totalCalories += meal["calories"];
@@ -152,7 +169,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
         - Use only numbers, no ranges
         - Do not include any explanations or additional text
         - Round all numbers to one decimal place
-        - Base calculations on a standard 100g serving
+        - Base calculations on a standard 10g serving
 
         
         Remember to be precise and avoid any unnecessary text or explanations.
@@ -413,6 +430,12 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
 
   // Modified _sendMessage method
   void _sendMessage({List<int>? imageData}) async {
+
+    setState(() {
+      isLoading = true; // Show loading
+    });
+
+
     try {
       final images = imageData != null ? [Uint8List.fromList(imageData)] : null;
       String fullResponse = '';
@@ -445,6 +468,10 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
       //   SnackBar(content: Text('Failed to analyze image: ${e.toString()}')),
       // );
       _handleNutritionResponse(context , "No food items found");
+    } finally {
+      setState(() {
+        isLoading = false; // Show loading
+      });
     }
   }
 
@@ -508,6 +535,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
 
     final themeProvider = Provider.of<ThemeProvider>(context);
     bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+    Color backgroundColor = Theme.of(context).scaffoldBackgroundColor;
 
     // DateTime now = DateTime.now();
     // String formattedDate = DateFormat('EEE d').format(now);
@@ -666,6 +694,24 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
 
             Divider(color: Colors.grey.shade800, thickness: 1),
               SizedBox(height: 20),
+              if (isLoading)
+                Container(
+                  color: backgroundColor, // Adjust opacity for visibility
+                  child: Center(
+                    child: Container(
+                      padding: EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: backgroundColor, // Match app theme
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          isDarkMode ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               Text("Food Intake", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 10),
               // mealCard("Add Food", Icons.add, null, null, _pickImage),

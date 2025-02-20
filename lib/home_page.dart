@@ -12,6 +12,7 @@ import 'theme_provider.dart'; // Import the ThemeProvider
 import 'package:intl/intl.dart';
 
 class HomePage extends StatelessWidget {
+
   Widget calorieText(String title, String value) {
     return Row(
       children: [
@@ -44,6 +45,8 @@ class HomePage extends StatelessWidget {
     final calorieProvider = Provider.of<CalorieProvider>(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     bool isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+
+    calorieProvider.fetchDailyGoalForDate(DateTime.now());
 
     // Get today's date formatted
     DateTime now = DateTime.now();

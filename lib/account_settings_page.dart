@@ -46,8 +46,18 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     );
   }
 
-
-
+  Future<void> _resetPassword() async {
+    try {
+      await _auth.sendPasswordResetEmail(email: _user!.email!);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Password reset email sent!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to send reset email: ${e.toString()}")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +78,11 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
             ElevatedButton(
               onPressed: _updateDisplayName,
               child: Text("Update Name"),
+            ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _resetPassword,
+              child: Text("Reset Password"),
             ),
             SizedBox(height: 20),
             ElevatedButton(

@@ -104,7 +104,12 @@ class PdfProvider extends ChangeNotifier {
           {
             "parts": [
               {
-                "text": "Analyze the following text and find the diseases of the patient and suggest the food not to be eaten and which exercises to be done for that disease :\n\n$text"
+                // "text": "Analyze the following text and find the diseases of the patient and suggest the food not to be eaten and which exercises to be done for that disease :\n\n$text"
+                // "text": "Analyze the following text and say what u have understand and also suggest the food not to be eaten and which exercises to be done for that disease. Note: Summarize the text in bullet points, use less theory. And also give me the disease that you have identified:\n\n$text"
+                "text": """Analyze the following health report and identify any medical conditions mentioned. Summarize the key findings in bullet points with minimal theory. Based on the identified condition(s), provide:
+
+              Foods to avoid
+              Recommended exercises for management:\n\n$text"""
               }
             ]
           }

@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class CalorieProvider with ChangeNotifier {
-  double dailyGoal = 2150.0;
+  double dailyGoal = 0.0;
 
   double _consumedCalories = 0.0;
   double _consumedProtein = 0.0;
@@ -77,6 +77,38 @@ class CalorieProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> fetchDailyGoalForDate(DateTime selectedDate) async {
+    try {
+      String? userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return;
+
+      // Format the selected date as YYYY-MM-DD (to match Firestore document ID)
+      // String formattedDate =
+      //     "${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}";
+      String formattedDate = "${selectedDate.year}-${selectedDate.month}-${selectedDate.day}";
+      // Reference the specific day's goal in Firestore
+      DocumentSnapshot docSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('DailyGoals')
+          .doc(formattedDate)
+          .get();
+
+      if (docSnapshot.exists) {
+        Map<String, dynamic>? data = docSnapshot.data() as Map<String, dynamic>?;
+
+        if (data != null && data.containsKey('dailyGoal')) {
+            dailyGoal = (data['dailyGoal'] as num).toDouble();
+        }
+      } else {
+        print("No daily goal found for $formattedDate.");
+        // You can optionally reset the dailyGoal to a default value if none is found
+      }
+    } catch (e) {
+      print("Error fetching daily goal for date: $e");
+    }
+  }
+
   // Setter for setting the daily goal and saving it in Firestore
   Future<void> setDailyGoal(double newGoal) async {
     dailyGoal = newGoal;
@@ -84,27 +116,37 @@ class CalorieProvider with ChangeNotifier {
     // Store the new daily goal in Firestore
     try {
       String? userId = FirebaseAuth.instance.currentUser?.uid;
+      final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+      DateTime now = DateTime.now();
+      String formattedDate = "${now.year}-${now.month}-${now.day}";
       if (userId != null) {
-        DocumentReference userDocRef = FirebaseFirestore.instance.collection('users').doc(userId);
+        DocumentReference daily_goal = _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('DailyGoals')
+            .doc(formattedDate);
 
-        // Fetch the user's document to check if dailyGoal exists
-        DocumentSnapshot docSnapshot = await userDocRef.get();
 
-        if (docSnapshot.exists) {
-          // Cast the document data to a Map
-          Map<String, dynamic>? data = docSnapshot.data() as Map<String, dynamic>?;
+        // if (docSnapshot.exists) {
+        //   // Cast the document data to a Map
+        //   Map<String, dynamic>? data = docSnapshot.data() as Map<String, dynamic>?;
+        //
+        //   if (data != null && data.containsKey('dailyGoal')) {
+        //     // If 'dailyGoal' exists, update it
+        //     await userDocRef.update({'dailyGoal': newGoal});
+        //   } else {
+        //     // If 'dailyGoal' doesn't exist, create it
+        //     await userDocRef.set({'dailyGoal': newGoal}, SetOptions(merge: true));
+        //   }
+        // } else {
+        //   // If the document doesn't exist, create it and set the 'dailyGoal'
+        //   await userDocRef.set({'dailyGoal': newGoal});
+        // }
+        await daily_goal.set({
+          'dailyGoal': newGoal,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
 
-          if (data != null && data.containsKey('dailyGoal')) {
-            // If 'dailyGoal' exists, update it
-            await userDocRef.update({'dailyGoal': newGoal});
-          } else {
-            // If 'dailyGoal' doesn't exist, create it
-            await userDocRef.set({'dailyGoal': newGoal}, SetOptions(merge: true));
-          }
-        } else {
-          // If the document doesn't exist, create it and set the 'dailyGoal'
-          await userDocRef.set({'dailyGoal': newGoal});
-        }
       }
     } catch (e) {
       print("Error updating daily goal in Firestore: $e");
