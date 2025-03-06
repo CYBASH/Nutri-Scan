@@ -1,5 +1,6 @@
+import 'dart:async';
 import 'dart:typed_data';  // This is the correct import for Uint8List
-
+import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +33,7 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
   void initState() {
     super.initState();
     _initializeData();
+    _getImagesFromPI();
   }
 
   Future<void> _initializeData() async {
@@ -238,6 +240,63 @@ class _MealTrackerUIState extends State<MealTrackerUI> {
       print("No image selected.");
     }
   }
+
+
+  Future<void> _getImagesFromPI() async {
+    try {
+      final directory = await getExternalStorageDirectory();
+      String path = '${directory?.path}/CapturedImages';
+
+      Directory imageDir = Directory(path);
+      if (!imageDir.existsSync()) {
+        print("CapturedImages folder does not exist!");
+        return;
+      }
+
+      Timer.periodic(Duration(seconds: 10), (timer) async {
+        // Get all image files in the directory
+        List<FileSystemEntity> files = imageDir.listSync();
+        List<File> imageFiles = files
+            .where((file) => file.path.endsWith('.jpg') || file.path.endsWith('.png'))
+            .map((file) => File(file.path))
+            .toList();
+
+        if (imageFiles.isEmpty) {
+          print("No images found in CapturedImages folder.");
+          return;
+        }
+
+        print("Found ${imageFiles.length} images.");
+
+        // Iterate through each image file and send it
+        // for (File imageFile in imageFiles) {
+        //   print("Processing: ${imageFile.path}");
+        //
+        //   final bytes = await imageFile.readAsBytes();
+        //   // Send the image data
+        //   _sendMessage(imageData: bytes);
+        // }
+        for (File imageFile in imageFiles) {
+          print("Processing: ${imageFile.path}");
+
+          final bytes = await imageFile.readAsBytes();
+          // Send the image data
+          _sendMessage(imageData: bytes);
+
+          // Move file to "AnalyzedImages" folder
+          String analyzedPath = '${directory?.path}/AnalyzedImages';
+          String newFilePath = '$analyzedPath/${imageFile.uri.pathSegments.last}';
+          await imageFile.rename(newFilePath);
+          print("Moved to: $newFilePath");
+        }
+
+
+      });
+    } catch (e) {
+      print('Error reading images: $e');
+    }
+  }
+
 
 
 
@@ -900,4 +959,9 @@ class MealService {
     }).toList();
 
   }
+
+
+
+
+
 }

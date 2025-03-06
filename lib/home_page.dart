@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:nutri_scan/profile.dart';
 import 'package:nutri_scan/settings.dart';
+import 'package:nutri_scan/telegram_service.dart';
 import 'package:percent_indicator/circular_percent_indicator.dart';
 import 'calorie_provider.dart';
 import 'image_prompt_home_page.dart'; // Import Chatbot HomePage
 import 'local_variables.dart';
+// import 'telegramImageGetter.dart';
 import 'pdf_analyzer.dart'; // Import PDF Analyzer HomePage
 import 'meal_tracker.dart';
 import 'package:provider/provider.dart';
@@ -358,6 +360,20 @@ class MyDrawer extends StatelessWidget {
               );
             },
           ),
+          // Divider(), // Add a divider before the settings option
+          // ListTile(
+          //   leading: Icon(Icons.settings),
+          //   title: Text('Settings'),
+          //   onTap: () {
+          //     Navigator.pop(context); // Close the drawer
+          //     // Navigate to settings page
+          //     // Replace `SettingsPage()` with your actual settings page widget
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(builder: (context) => IRImageScreen()),
+          //     );
+          //   },
+          // ),
         ],
       ),
     );

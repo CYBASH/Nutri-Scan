@@ -95,7 +95,7 @@ class PdfProvider extends ChangeNotifier {
   // Method to summarize text (as before)
   Future<String> _summarizeText(String text) async {
     final response = await http.post(
-      Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyARtKqdqIqsDrqM0RKnQeuWbqqdiyFZHXI'),
+      Uri.parse('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyARtKqdqIqsDrqM0RKnQeuWbqqdiyFZHXI'),
       headers: {
         'Content-Type': 'application/json',
       },
